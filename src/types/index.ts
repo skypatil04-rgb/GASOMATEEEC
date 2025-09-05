@@ -15,6 +15,5 @@ export interface Vendor {
   id: string;
   name: string;
   cylindersOut: CylinderTransaction;
-  cylindersIn: CylinderTransaction;
   transactions: Transaction[];
 }

@@ -42,26 +42,17 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-            <Card>
+             <Card>
               <CardHeader>
-                <CardTitle className="text-lg text-primary">Cylinders In</CardTitle>
-                <CardDescription>Total returned by vendor</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Oxygen: <span className="font-bold text-lg">{vendor.cylindersIn.oxygen}</span></p>
-                <p className="text-sm text-muted-foreground">CO2: <span className="font-bold text-lg">{vendor.cylindersIn.co2}</span></p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg text-destructive">Cylinders Out</CardTitle>
-                <CardDescription>Total given to vendor</CardDescription>
+                <CardTitle className="text-lg text-destructive">Net Cylinders With Vendor</CardTitle>
+                <CardDescription>Total currently held by vendor</CardDescription>
               </CardHeader>
               <CardContent>
                  <p className="text-sm text-muted-foreground">Oxygen: <span className="font-bold text-lg">{vendor.cylindersOut.oxygen}</span></p>
                  <p className="text-sm text-muted-foreground">CO2: <span className="font-bold text-lg">{vendor.cylindersOut.co2}</span></p>
               </CardContent>
             </Card>
+            <div/>
           </div>
           <Separator />
           <div>
@@ -99,7 +90,10 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                     <Button
                       variant="default"
                       className="transition-transform active:scale-95"
-                      onClick={() => handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount, date)}
+                      onClick={() => {
+                        handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount, date);
+                        setOxygenInCount(0);
+                      }}
                     >
                       In <ArrowUp className="ml-2 h-5 w-5" />
                     </Button>
@@ -109,7 +103,10 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
-                      onClick={() => handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date)}
+                      onClick={() => {
+                        handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date);
+                        setOxygenOutCount(0);
+                      }}
                     >
                       Out <ArrowDown className="ml-2 h-5 w-5" />
                     </Button>
@@ -124,7 +121,10 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       <Button
                           variant="default"
                           className="transition-transform active:scale-95"
-                          onClick={() => handleTransaction(vendor.id, 'in', 'co2', co2InCount, date)}
+                          onClick={() => {
+                            handleTransaction(vendor.id, 'in', 'co2', co2InCount, date);
+                            setCo2InCount(0);
+                          }}
                       >
                           In <ArrowUp className="ml-2 h-5 w-5" />
                       </Button>
@@ -134,7 +134,10 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
-                      onClick={() => handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date)}
+                      onClick={() => {
+                        handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date);
+                        setCo2OutCount(0);
+                      }}
                     >
                      Out <ArrowDown className="ml-2 h-5 w-5" />
                     </Button>

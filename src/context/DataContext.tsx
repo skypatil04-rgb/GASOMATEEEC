@@ -95,7 +95,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const newVendor: Vendor = {
       id: crypto.randomUUID(),
       name: name.trim(),
-      cylindersIn: { oxygen: 0, co2: 0 },
       cylindersOut: { oxygen: 0, co2: 0 },
       transactions: [],
     };
@@ -142,24 +141,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
           const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-          const cylindersIn = transactions
-            .filter(t => t.type === 'in')
-            .reduce((acc, t) => {
-              acc[t.cylinderType] += t.count;
-              return acc;
-            }, { oxygen: 0, co2: 0 });
-
           const cylindersOut = transactions
-            .filter(t => t.type === 'out')
             .reduce((acc, t) => {
-              acc[t.cylinderType] += t.count;
+              if (t.type === 'out') {
+                acc[t.cylinderType] += t.count;
+              } else {
+                acc[t.cylinderType] -= t.count;
+              }
               return acc;
             }, { oxygen: 0, co2: 0 });
+          
+          // Ensure counts don't go negative, which shouldn't happen with valid transactions
+          cylindersOut.oxygen = Math.max(0, cylindersOut.oxygen);
+          cylindersOut.co2 = Math.max(0, cylindersOut.co2);
 
           return {
             ...vendor,
             transactions,
-            cylindersIn,
             cylindersOut,
           };
         }

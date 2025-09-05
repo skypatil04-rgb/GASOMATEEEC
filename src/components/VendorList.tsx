@@ -4,7 +4,7 @@ import { useData } from '@/context/DataContext';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowRight, ArrowDown } from 'lucide-react';
 
 export default function VendorList() {
   const { vendors, isLoading } = useData();
@@ -45,17 +45,10 @@ export default function VendorList() {
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                    <div className="flex items-center gap-2">
-                    <ArrowUp className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="font-bold">{vendor.cylindersIn.oxygen + vendor.cylindersIn.co2}</span>
-                      <span className="text-muted-foreground ml-1">In</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <ArrowDown className="h-4 w-4 text-destructive" />
                     <div>
                       <span className="font-bold">{vendor.cylindersOut.oxygen + vendor.cylindersOut.co2}</span>
-                      <span className="text-muted-foreground ml-1">Out</span>
+                      <span className="text-muted-foreground ml-1">Net Cylinders Out</span>
                     </div>
                   </div>
                 </CardContent>
