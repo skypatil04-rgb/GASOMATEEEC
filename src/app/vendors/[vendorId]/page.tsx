@@ -5,8 +5,11 @@ import Header from '@/components/Header';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
+import React from 'react';
 
 export default function VendorDetailPage({ params }: { params: { vendorId: string } }) {
+  const { vendorId } = params;
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -18,7 +21,7 @@ export default function VendorDetailPage({ params }: { params: { vendorId: strin
               All Vendors
             </Link>
           </Button>
-          <VendorDetail vendorId={params.vendorId} />
+          <VendorDetail vendorId={vendorId} />
         </div>
       </main>
     </div>
