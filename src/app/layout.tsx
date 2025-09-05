@@ -5,7 +5,7 @@ import { DataProvider } from '@/context/DataContext';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'CylinderLink',
+  title: 'GASOMATEEC',
   description: 'Manage your gas cylinder inventory with ease.',
 };
 
