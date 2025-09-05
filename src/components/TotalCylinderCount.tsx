@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Warehouse } from 'lucide-react';
 
 export default function TotalCylinderCount() {
-  const { totalCylinders, isLoading } = useData();
+  const { oxygenCylinders, co2Cylinders, isLoading } = useData();
 
   return (
     <Card>
@@ -16,9 +16,18 @@ export default function TotalCylinderCount() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-12 w-32" />
+          <Skeleton className="h-12 w-full" />
         ) : (
-          <div className="text-5xl font-bold text-primary">{totalCylinders}</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground">OXYGEN</p>
+              <div className="text-5xl font-bold text-primary">{oxygenCylinders}</div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">CO2</p>
+              <div className="text-5xl font-bold text-primary">{co2Cylinders}</div>
+            </div>
+          </div>
         )}
         <p className="text-xs text-muted-foreground pt-2">
           This is the total count of cylinders available across all locations.

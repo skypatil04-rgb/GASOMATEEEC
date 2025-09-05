@@ -34,7 +34,8 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
               <CardDescription>Total returned by vendor</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{vendor.cylindersIn}</p>
+              <p className="text-sm text-muted-foreground">Oxygen: <span className="font-bold text-lg">{vendor.cylindersIn.oxygen}</span></p>
+              <p className="text-sm text-muted-foreground">CO2: <span className="font-bold text-lg">{vendor.cylindersIn.co2}</span></p>
             </CardContent>
           </Card>
           <Card>
@@ -43,32 +44,61 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
               <CardDescription>Total given to vendor</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{vendor.cylindersOut}</p>
+               <p className="text-sm text-muted-foreground">Oxygen: <span className="font-bold text-lg">{vendor.cylindersOut.oxygen}</span></p>
+               <p className="text-sm text-muted-foreground">CO2: <span className="font-bold text-lg">{vendor.cylindersOut.co2}</span></p>
             </CardContent>
           </Card>
         </div>
         <Separator />
         <div>
           <h3 className="text-lg font-medium mb-4 text-center">Record a Transaction</h3>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button
-              size="lg"
-              variant="destructive"
-              className="flex-1 transition-transform active:scale-95"
-              onClick={() => handleTransaction(vendor.id, 'out')}
-            >
-              Cylinder Out
-              <ArrowDown className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="default"
-              className="flex-1 transition-transform active:scale-95"
-              onClick={() => handleTransaction(vendor.id, 'in')}
-            >
-              Cylinder In
-              <ArrowUp className="ml-2 h-5 w-5" />
-            </Button>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-center mb-2">Oxygen Cylinder</h4>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  className="flex-1 transition-transform active:scale-95"
+                  onClick={() => handleTransaction(vendor.id, 'out', 'oxygen')}
+                >
+                  Cylinder Out
+                  <ArrowDown className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="default"
+                  className="flex-1 transition-transform active:scale-95"
+                  onClick={() => handleTransaction(vendor.id, 'in', 'oxygen')}
+                >
+                  Cylinder In
+                  <ArrowUp className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium text-center mb-2">CO2 Cylinder</h4>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  className="flex-1 transition-transform active:scale-95"
+                  onClick={() => handleTransaction(vendor.id, 'out', 'co2')}
+                >
+                  Cylinder Out
+                  <ArrowDown className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="default"
+                  className="flex-1 transition-transform active:scale-95"
+                  onClick={() => handleTransaction(vendor.id, 'in', 'co2')}
+                >
+                  Cylinder In
+                  <ArrowUp className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -1,17 +1,20 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Vendor } from '@/types';
+import { Vendor, CylinderTransaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const VENDORS_STORAGE_KEY = 'cylinderLinkVendors';
-const CYLINDERS_STORAGE_KEY = 'cylinderLinkTotal';
+const OXYGEN_CYLINDERS_STORAGE_KEY = 'cylinderLinkTotalOxygen';
+const CO2_CYLINDERS_STORAGE_KEY = 'cylinderLinkTotalCO2';
 
 interface DataContextType {
   vendors: Vendor[];
+  oxygenCylinders: number;
+  co2Cylinders: number;
   totalCylinders: number;
   addVendor: (name: string) => void;
-  handleTransaction: (vendorId: string, type: 'in' | 'out') => void;
+  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction) => void;
   isLoading: boolean;
 }
 
@@ -19,24 +22,31 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [totalCylinders, setTotalCylinders] = useState<number>(0);
+  const [oxygenCylinders, setOxygenCylinders] = useState<number>(0);
+  const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     try {
       const storedVendors = localStorage.getItem(VENDORS_STORAGE_KEY);
-      const storedCylinders = localStorage.getItem(CYLINDERS_STORAGE_KEY);
+      const storedOxygenCylinders = localStorage.getItem(OXYGEN_CYLINDERS_STORAGE_KEY);
+      const storedCO2Cylinders = localStorage.getItem(CO2_CYLINDERS_STORAGE_KEY);
 
       if (storedVendors) {
         setVendors(JSON.parse(storedVendors));
       }
 
-      if (storedCylinders) {
-        setTotalCylinders(JSON.parse(storedCylinders));
+      if (storedOxygenCylinders) {
+        setOxygenCylinders(JSON.parse(storedOxygenCylinders));
       } else {
-        // Initialize with a default value if nothing is in storage
-        setTotalCylinders(100);
+        setOxygenCylinders(50);
+      }
+
+      if (storedCO2Cylinders) {
+        setCo2Cylinders(JSON.parse(storedCO2Cylinders));
+      } else {
+        setCo2Cylinders(50);
       }
     } catch (error) {
       console.error("Failed to load data from localStorage", error);
@@ -63,12 +73,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       try {
-        localStorage.setItem(CYLINDERS_STORAGE_KEY, JSON.stringify(totalCylinders));
+        localStorage.setItem(OXYGEN_CYLINDERS_STORAGE_KEY, JSON.stringify(oxygenCylinders));
+        localStorage.setItem(CO2_CYLINDERS_STORAGE_KEY, JSON.stringify(co2Cylinders));
       } catch (error) {
         console.error("Failed to save total cylinders to localStorage", error);
       }
     }
-  }, [totalCylinders, isLoading]);
+  }, [oxygenCylinders, co2Cylinders, isLoading]);
 
   const addVendor = (name: string) => {
     if (name.trim() === '') {
@@ -82,44 +93,52 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const newVendor: Vendor = {
       id: crypto.randomUUID(),
       name: name.trim(),
-      cylindersIn: 0,
-      cylindersOut: 0,
+      cylindersIn: { oxygen: 0, co2: 0 },
+      cylindersOut: { oxygen: 0, co2: 0 },
     };
     setVendors(prev => [...prev, newVendor]);
     toast({ title: "Success", description: `Vendor "${name.trim()}" has been added.` });
   };
 
-  const handleTransaction = (vendorId: string, type: 'in' | 'out') => {
-    if (type === 'out' && totalCylinders <= 0) {
+  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction) => {
+    const currentStock = cylinderType === 'oxygen' ? oxygenCylinders : co2Cylinders;
+    if (type === 'out' && currentStock <= 0) {
       toast({
         title: "Action blocked",
-        description: "Cannot check out a cylinder, stock is at 0.",
+        description: `Cannot check out an ${cylinderType.toUpperCase()} cylinder, stock is at 0.`,
         variant: "destructive",
       });
       return;
     }
+
+    if (cylinderType === 'oxygen') {
+        setOxygenCylinders(prev => type === 'in' ? prev + 1 : prev - 1);
+    } else {
+        setCo2Cylinders(prev => type === 'in' ? prev + 1 : prev - 1);
+    }
     
-    setTotalCylinders(prev => type === 'in' ? prev + 1 : prev - 1);
     setVendors(prev =>
       prev.map(vendor => {
         if (vendor.id === vendorId) {
-          return {
-            ...vendor,
-            cylindersIn: type === 'in' ? vendor.cylindersIn + 1 : vendor.cylindersIn,
-            cylindersOut: type === 'out' ? vendor.cylindersOut + 1 : vendor.cylindersOut,
-          };
+          const updatedVendor = { ...vendor };
+          if (type === 'in') {
+            updatedVendor.cylindersIn[cylinderType]++;
+          } else {
+            updatedVendor.cylindersOut[cylinderType]++;
+          }
+          return updatedVendor;
         }
         return vendor;
       })
     );
     toast({
         title: "Transaction complete",
-        description: `Cylinder ${type === 'in' ? 'returned from' : 'given to'} vendor.`
+        description: `${cylinderType.toUpperCase()} cylinder ${type === 'in' ? 'returned from' : 'given to'} vendor.`
     })
   };
 
   return (
-    <DataContext.Provider value={{ vendors, totalCylinders, addVendor, handleTransaction, isLoading }}>
+    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, isLoading }}>
       {children}
     </DataContext.Provider>
   );

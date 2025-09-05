@@ -38,23 +38,23 @@ export default function VendorList() {
             <Link href={`/vendors/${vendor.id}`} key={vendor.id} className="block group">
               <Card className="h-full hover:border-primary transition-colors hover:shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-center text-lg">
-                    {vendor.name}
+                  <CardTitle className="flex justify-between items-start text-lg">
+                    <span>{vendor.name}</span>
                     <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex justify-around gap-4 text-sm">
-                  <div className="flex items-center gap-2">
+                <CardContent className="space-y-2 text-sm">
+                   <div className="flex items-center gap-2">
                     <ArrowUp className="h-4 w-4 text-primary" />
                     <div>
-                      <span className="font-bold">{vendor.cylindersIn}</span>
+                      <span className="font-bold">{vendor.cylindersIn.oxygen + vendor.cylindersIn.co2}</span>
                       <span className="text-muted-foreground ml-1">In</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <ArrowDown className="h-4 w-4 text-destructive" />
                     <div>
-                      <span className="font-bold">{vendor.cylindersOut}</span>
+                      <span className="font-bold">{vendor.cylindersOut.oxygen + vendor.cylindersOut.co2}</span>
                       <span className="text-muted-foreground ml-1">Out</span>
                     </div>
                   </div>
