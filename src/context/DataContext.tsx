@@ -132,8 +132,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVendors(prev =>
       prev.map(vendor => {
         if (vendor.id === vendorId) {
-          const updatedVendor = { ...vendor };
-          
           const newTransaction: Transaction = {
             id: crypto.randomUUID(),
             date: date.toISOString(),
@@ -142,14 +140,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
             count
           };
 
-          updatedVendor.transactions = [...(updatedVendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-          if (type === 'in') {
-            updatedVendor.cylindersIn[cylinderType] += count;
-          } else {
-            updatedVendor.cylindersOut[cylinderType] += count;
-          }
-          return updatedVendor;
+          const cylindersIn = transactions
+            .filter(t => t.type === 'in')
+            .reduce((acc, t) => {
+              acc[t.cylinderType] += t.count;
+              return acc;
+            }, { oxygen: 0, co2: 0 });
+
+          const cylindersOut = transactions
+            .filter(t => t.type === 'out')
+            .reduce((acc, t) => {
+              acc[t.cylinderType] += t.count;
+              return acc;
+            }, { oxygen: 0, co2: 0 });
+
+          return {
+            ...vendor,
+            transactions,
+            cylindersIn,
+            cylindersOut,
+          };
         }
         return vendor;
       })
