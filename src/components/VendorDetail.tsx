@@ -17,10 +17,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const { vendors, handleTransaction, isLoading } = useData();
-  const [oxygenOutCount, setOxygenOutCount] = useState(1);
-  const [oxygenInCount, setOxygenInCount] = useState(1);
-  const [co2OutCount, setCo2OutCount] = useState(1);
-  const [co2InCount, setCo2InCount] = useState(1);
+  const [oxygenOutCount, setOxygenOutCount] = useState(0);
+  const [oxygenInCount, setOxygenInCount] = useState(0);
+  const [co2OutCount, setCo2OutCount] = useState(0);
+  const [co2InCount, setCo2InCount] = useState(0);
   const [date, setDate] = useState<Date>(new Date());
   
   const vendor = vendors.find(v => v.id === vendorId);
@@ -95,7 +95,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 <h4 className="font-medium text-center mb-2">Oxygen Cylinder</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
@@ -105,7 +105,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                     <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                     <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                     <Button
                       variant="default"
                       className="transition-transform active:scale-95"
@@ -120,7 +120,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 <h4 className="font-medium text-center mb-2">CO2 Cylinder</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div className="flex items-center gap-2">
-                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
@@ -130,7 +130,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                     </Button>
                   </div>
                    <div className="flex items-center gap-2">
-                      <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                      <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                       <Button
                           variant="default"
                           className="transition-transform active:scale-95"
