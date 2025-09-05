@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import TotalCylinderCount from '@/components/TotalCylinderCount';
-import LowStockAlert from '@/components/LowStockAlert';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { ArrowRight, Users } from 'lucide-react';
@@ -15,7 +14,7 @@ export default function Home() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto grid gap-8">
           <TotalCylinderCount />
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-1 gap-8">
             <Card className="flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-medium">Manage Vendors</CardTitle>
@@ -32,7 +31,6 @@ export default function Home() {
                 </Button>
               </CardContent>
             </Card>
-            <LowStockAlert />
           </div>
         </div>
       </main>
