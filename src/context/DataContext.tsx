@@ -52,15 +52,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Failed to load data from localStorage", error);
-      toast({
-        title: "Error",
-        description: "Could not load saved data.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
