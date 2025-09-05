@@ -95,16 +95,6 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 <h4 className="font-medium text-center mb-2">Oxygen Cylinder</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
-                    <Button
-                      variant="destructive"
-                      className="transition-transform active:scale-95"
-                      onClick={() => handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date)}
-                    >
-                      Out <ArrowDown className="ml-2 h-5 w-5" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
                      <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                     <Button
                       variant="default"
@@ -114,21 +104,21 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       In <ArrowUp className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                    <Button
+                      variant="destructive"
+                      className="transition-transform active:scale-95"
+                      onClick={() => handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date)}
+                    >
+                      Out <ArrowDown className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div>
                 <h4 className="font-medium text-center mb-2">CO2 Cylinder</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                   <div className="flex items-center gap-2">
-                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
-                    <Button
-                      variant="destructive"
-                      className="transition-transform active:scale-95"
-                      onClick={() => handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date)}
-                    >
-                     Out <ArrowDown className="ml-2 h-5 w-5" />
-                    </Button>
-                  </div>
                    <div className="flex items-center gap-2">
                       <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
                       <Button
@@ -139,6 +129,16 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                           In <ArrowUp className="ml-2 h-5 w-5" />
                       </Button>
                    </div>
+                   <div className="flex items-center gap-2">
+                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                    <Button
+                      variant="destructive"
+                      className="transition-transform active:scale-95"
+                      onClick={() => handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date)}
+                    >
+                     Out <ArrowDown className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
