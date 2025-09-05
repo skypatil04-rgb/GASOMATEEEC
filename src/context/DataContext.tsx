@@ -15,6 +15,7 @@ interface DataContextType {
   totalCylinders: number;
   addVendor: (name: string) => void;
   handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date) => void;
+  setStock: (oxygen: number, co2: number) => void;
   isLoading: boolean;
 }
 
@@ -176,9 +177,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
     );
   };
+  
+  const setStock = (oxygen: number, co2: number) => {
+    setOxygenCylinders(oxygen);
+    setCo2Cylinders(co2);
+    toast({
+        title: "Stock updated",
+        description: "Total cylinder counts have been saved."
+    });
+  }
 
   return (
-    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, isLoading }}>
+    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, setStock, isLoading }}>
       {children}
     </DataContext.Provider>
   );
