@@ -8,7 +8,7 @@ import { ChevronLeft } from 'lucide-react';
 import React from 'react';
 
 export default function VendorDetailPage({ params }: { params: { vendorId: string } }) {
-  const { vendorId } = params;
+  const { vendorId } = React.use(params);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
