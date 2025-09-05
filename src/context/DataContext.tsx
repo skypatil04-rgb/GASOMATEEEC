@@ -112,25 +112,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return;
     }
     
-    const currentStock = cylinderType === 'oxygen' ? oxygenCylinders : co2Cylinders;
-    if (type === 'out' && currentStock < count) {
-      toast({
-        title: "Action blocked",
-        description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (cylinderType === 'oxygen') {
-        setOxygenCylinders(prev => type === 'in' ? prev + count : prev - count);
-    } else {
-        setCo2Cylinders(prev => type === 'in' ? prev + count : prev - count);
-    }
-    
     setVendors(prev =>
       prev.map(vendor => {
         if (vendor.id === vendorId) {
+          const currentStock = cylinderType === 'oxygen' ? oxygenCylinders : co2Cylinders;
+          if (type === 'out' && currentStock < count) {
+            toast({
+              title: "Action blocked",
+              description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
+              variant: "destructive",
+            });
+            return vendor; // Return original vendor state if transaction is blocked
+          }
+
+          if (type === 'in') {
+            const netCylindersWithVendor = vendor.cylindersOut[cylinderType];
+            if (netCylindersWithVendor < count) {
+                toast({
+                    title: 'Action blocked',
+                    description: `Cannot check in ${count} ${cylinderType.toUpperCase()} cylinder(s), vendor only holds ${netCylindersWithVendor}.`,
+                    variant: 'destructive',
+                });
+                return vendor;
+            }
+          }
+
           const newTransaction: Transaction = {
             id: crypto.randomUUID(),
             date: date.toISOString(),
@@ -138,6 +144,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             cylinderType,
             count
           };
+
+          if (cylinderType === 'oxygen') {
+              setOxygenCylinders(prev => type === 'in' ? prev + count : prev - count);
+          } else {
+              setCo2Cylinders(prev => type === 'in' ? prev + count : prev - count);
+          }
 
           const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -151,9 +163,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
               return acc;
             }, { oxygen: 0, co2: 0 });
           
-          // Ensure counts don't go negative, which shouldn't happen with valid transactions
           cylindersOut.oxygen = Math.max(0, cylindersOut.oxygen);
           cylindersOut.co2 = Math.max(0, cylindersOut.co2);
+          
+          toast({
+              title: "Transaction complete",
+              description: `${count} ${cylinderType.toUpperCase()} cylinder(s) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
+          })
 
           return {
             ...vendor,
@@ -164,10 +180,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return vendor;
       })
     );
-    toast({
-        title: "Transaction complete",
-        description: `${count} ${cylinderType.toUpperCase()} cylinder(s) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
-    })
   };
 
   return (
