@@ -14,7 +14,7 @@ interface DataContextType {
   co2Cylinders: number;
   totalCylinders: number;
   addVendor: (name: string) => void;
-  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction) => void;
+  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number) => void;
   isLoading: boolean;
 }
 
@@ -100,21 +100,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
     toast({ title: "Success", description: `Vendor "${name.trim()}" has been added.` });
   };
 
-  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction) => {
+  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number) => {
+    if (count <= 0) {
+        toast({
+            title: "Invalid count",
+            description: "Transaction count must be a positive number.",
+            variant: "destructive",
+        });
+        return;
+    }
+    
     const currentStock = cylinderType === 'oxygen' ? oxygenCylinders : co2Cylinders;
-    if (type === 'out' && currentStock <= 0) {
+    if (type === 'out' && currentStock < count) {
       toast({
         title: "Action blocked",
-        description: `Cannot check out an ${cylinderType.toUpperCase()} cylinder, stock is at 0.`,
+        description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
         variant: "destructive",
       });
       return;
     }
 
     if (cylinderType === 'oxygen') {
-        setOxygenCylinders(prev => type === 'in' ? prev + 1 : prev - 1);
+        setOxygenCylinders(prev => type === 'in' ? prev + count : prev - count);
     } else {
-        setCo2Cylinders(prev => type === 'in' ? prev + 1 : prev - 1);
+        setCo2Cylinders(prev => type === 'in' ? prev + count : prev - count);
     }
     
     setVendors(prev =>
@@ -122,9 +131,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (vendor.id === vendorId) {
           const updatedVendor = { ...vendor };
           if (type === 'in') {
-            updatedVendor.cylindersIn[cylinderType]++;
+            updatedVendor.cylindersIn[cylinderType] += count;
           } else {
-            updatedVendor.cylindersOut[cylinderType]++;
+            updatedVendor.cylindersOut[cylinderType] += count;
           }
           return updatedVendor;
         }
@@ -133,7 +142,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     );
     toast({
         title: "Transaction complete",
-        description: `${cylinderType.toUpperCase()} cylinder ${type === 'in' ? 'returned from' : 'given to'} vendor.`
+        description: `${count} ${cylinderType.toUpperCase()} cylinder(s) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
     })
   };
 

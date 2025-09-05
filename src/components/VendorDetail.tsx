@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 
 export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const { vendors, handleTransaction, isLoading } = useData();
+  const [oxygenOutCount, setOxygenOutCount] = useState(1);
+  const [oxygenInCount, setOxygenInCount] = useState(1);
+  const [co2OutCount, setCo2OutCount] = useState(1);
+  const [co2InCount, setCo2InCount] = useState(1);
+  
   const vendor = vendors.find(v => v.id === vendorId);
 
   if (isLoading) {
@@ -55,48 +62,52 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
           <div className="space-y-4">
             <div>
               <h4 className="font-medium text-center mb-2">Oxygen Cylinder</h4>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  className="flex-1 transition-transform active:scale-95"
-                  onClick={() => handleTransaction(vendor.id, 'out', 'oxygen')}
-                >
-                  Cylinder Out
-                  <ArrowDown className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="default"
-                  className="flex-1 transition-transform active:scale-95"
-                  onClick={() => handleTransaction(vendor.id, 'in', 'oxygen')}
-                >
-                  Cylinder In
-                  <ArrowUp className="ml-2 h-5 w-5" />
-                </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                  <Button
+                    variant="destructive"
+                    className="transition-transform active:scale-95"
+                    onClick={() => handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount)}
+                  >
+                    Out <ArrowDown className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                   <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                  <Button
+                    variant="default"
+                    className="transition-transform active:scale-95"
+                    onClick={() => handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount)}
+                  >
+                    In <ArrowUp className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
             <div>
               <h4 className="font-medium text-center mb-2">CO2 Cylinder</h4>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  className="flex-1 transition-transform active:scale-95"
-                  onClick={() => handleTransaction(vendor.id, 'out', 'co2')}
-                >
-                  Cylinder Out
-                  <ArrowDown className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="default"
-                  className="flex-1 transition-transform active:scale-95"
-                  onClick={() => handleTransaction(vendor.id, 'in', 'co2')}
-                >
-                  Cylinder In
-                  <ArrowUp className="ml-2 h-5 w-5" />
-                </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div className="flex items-center gap-2">
+                   <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                  <Button
+                    variant="destructive"
+                    className="transition-transform active:scale-95"
+                    onClick={() => handleTransaction(vendor.id, 'out', 'co2', co2OutCount)}
+                  >
+                   Out <ArrowDown className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(1, parseInt(e.target.value) || 1))} className="flex-1" />
+                    <Button
+                        variant="default"
+                        className="transition-transform active:scale-95"
+                        onClick={() => handleTransaction(vendor.id, 'in', 'co2', co2InCount)}
+                    >
+                        In <ArrowUp className="ml-2 h-5 w-5" />
+                    </Button>
+                 </div>
               </div>
             </div>
           </div>
