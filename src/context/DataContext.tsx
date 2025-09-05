@@ -103,17 +103,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     
     let transactionSuccessful = false;
+    let newOxygenCylinders = oxygenCylinders;
+    let newCo2Cylinders = co2Cylinders;
+
     setVendors(prev =>
       prev.map(vendor => {
         if (vendor.id === vendorId) {
-          const currentStock = cylinderType === 'oxygen' ? oxygenCylinders : co2Cylinders;
-          if (type === 'out' && currentStock < count) {
-            toast({
-              title: "Action blocked",
-              description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
-              variant: "destructive",
-            });
-            return vendor;
+          
+          if (type === 'out') {
+            const currentStock = cylinderType === 'oxygen' ? newOxygenCylinders : newCo2Cylinders;
+            if (currentStock < count) {
+              toast({
+                title: "Action blocked",
+                description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
+                variant: "destructive",
+              });
+              return vendor;
+            }
           }
 
           if (type === 'in') {
@@ -137,9 +143,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           };
 
           if (cylinderType === 'oxygen') {
-              setOxygenCylinders(prev => type === 'in' ? prev + count : prev - count);
+              newOxygenCylinders = type === 'in' ? newOxygenCylinders + count : newOxygenCylinders - count;
           } else {
-              setCo2Cylinders(prev => type === 'in' ? prev + count : prev - count);
+              newCo2Cylinders = type === 'in' ? newCo2Cylinders + count : newCo2Cylinders - count;
           }
 
           const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -169,6 +175,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
     );
       if (transactionSuccessful) {
+          setOxygenCylinders(newOxygenCylinders);
+          setCo2Cylinders(newCo2Cylinders);
           toast({
               title: "Transaction complete",
               description: `${count} ${cylinderType.toUpperCase()} cylinder(s) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
