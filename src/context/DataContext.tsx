@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Vendor, CylinderTransaction } from '@/types';
+import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const VENDORS_STORAGE_KEY = 'cylinderLinkVendors';
@@ -14,7 +14,7 @@ interface DataContextType {
   co2Cylinders: number;
   totalCylinders: number;
   addVendor: (name: string) => void;
-  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number) => void;
+  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date) => void;
   isLoading: boolean;
 }
 
@@ -34,7 +34,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const storedCO2Cylinders = localStorage.getItem(CO2_CYLINDERS_STORAGE_KEY);
 
       if (storedVendors) {
-        setVendors(JSON.parse(storedVendors));
+        // Ensure transactions array exists for old data
+        const parsedVendors = JSON.parse(storedVendors).map((v: Vendor) => ({...v, transactions: v.transactions || []}));
+        setVendors(parsedVendors);
       }
 
       if (storedOxygenCylinders) {
@@ -95,12 +97,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       name: name.trim(),
       cylindersIn: { oxygen: 0, co2: 0 },
       cylindersOut: { oxygen: 0, co2: 0 },
+      transactions: [],
     };
     setVendors(prev => [...prev, newVendor]);
     toast({ title: "Success", description: `Vendor "${name.trim()}" has been added.` });
   };
 
-  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number) => {
+  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date) => {
     if (count <= 0) {
         toast({
             title: "Invalid count",
@@ -130,6 +133,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       prev.map(vendor => {
         if (vendor.id === vendorId) {
           const updatedVendor = { ...vendor };
+          
+          const newTransaction: Transaction = {
+            id: crypto.randomUUID(),
+            date: date.toISOString(),
+            type,
+            cylinderType,
+            count
+          };
+
+          updatedVendor.transactions = [...(updatedVendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
           if (type === 'in') {
             updatedVendor.cylindersIn[cylinderType] += count;
           } else {
