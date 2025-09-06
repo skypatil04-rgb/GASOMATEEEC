@@ -26,14 +26,15 @@ export default function ReportsPage() {
       }))
     );
     
-    if (date?.from && date?.to) {
+    if (date?.from) {
+      const from = new Date(date.from);
+      from.setHours(0,0,0,0);
+      // If there's no 'to' date, use the 'from' date as the end of the range.
+      const to = date.to ? new Date(date.to) : new Date(date.from);
+      to.setHours(23,59,59,999);
+
       allTransactions = allTransactions.filter(tx => {
         const txDate = new Date(tx.date);
-        // Set time to 0 to include full start and end days
-        const from = new Date(date.from!);
-        from.setHours(0,0,0,0);
-        const to = new Date(date.to!);
-        to.setHours(23,59,59,999);
         return isWithinInterval(txDate, { start: from, end: to });
       });
     }
@@ -67,7 +68,13 @@ export default function ReportsPage() {
     
     const fromDate = date?.from ? format(date.from, 'yyyy-MM-dd') : '';
     const toDate = date?.to ? format(date.to, 'yyyy-MM-dd') : '';
-    const datePart = fromDate && toDate ? `_${fromDate}_to_${toDate}` : '_all_time';
+    let datePart = '_all_time';
+    if(fromDate && toDate) {
+        datePart = `_${fromDate}_to_${toDate}`;
+    } else if (fromDate) {
+        datePart = `_from_${fromDate}`;
+    }
+
 
     link.setAttribute('href', url);
     link.setAttribute('download', `gasomateec_transactions${datePart}.csv`);
@@ -88,7 +95,7 @@ export default function ReportsPage() {
             <CardHeader>
               <CardTitle>Download Transaction History</CardTitle>
               <CardDescription>
-                Select a date range to export a log of cylinder movements. If no range is selected, it will download all transactions.
+                Select a start and end date to export a log of cylinder movements. If no range is selected, all transactions will be downloaded.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
