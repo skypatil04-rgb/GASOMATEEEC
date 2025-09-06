@@ -69,6 +69,7 @@ export default function ReportsPage() {
     const toDate = date?.to ? format(date.to, 'yyyy-MM-dd') : '';
     const datePart = fromDate && toDate ? `_${fromDate}_to_${toDate}` : '_all_time';
 
+    link.setAttribute('href', url);
     link.setAttribute('download', `gasomateec_transactions${datePart}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
