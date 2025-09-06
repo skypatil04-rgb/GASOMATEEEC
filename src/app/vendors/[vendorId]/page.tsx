@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import React from 'react';
+import { useParams } from 'next/navigation';
 
-export default function VendorDetailPage({ params }: { params: { vendorId: string } }) {
-  const { vendorId } = React.use(params);
+export default function VendorDetailPage() {
+  const params = useParams();
+  const vendorId = params.vendorId as string;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
