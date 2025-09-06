@@ -5,16 +5,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import TotalCylinderCount from '@/components/TotalCylinderCount';
 import Header from '@/components/Header';
 import Link from 'next/link';
-import { ArrowRight, Users, Warehouse, ArrowDownCircle } from 'lucide-react';
+import { ArrowRight, Users, Warehouse } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
   const { vendors, isLoading } = useData();
+  const [totalCylindersOut, setTotalCylindersOut] = useState(0);
+  const [hasMounted, setHasMounted] = useState(false);
 
-  const totalCylindersOut = vendors.reduce((acc, vendor) => {
-    return acc + vendor.cylindersOut.oxygen + vendor.cylindersOut.co2;
-  }, 0);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasMounted && vendors.length > 0) {
+      const total = vendors.reduce((acc, vendor) => {
+        const oxygenOut = vendor.cylindersOut?.oxygen || 0;
+        const co2Out = vendor.cylindersOut?.co2 || 0;
+        return acc + oxygenOut + co2Out;
+      }, 0);
+      setTotalCylindersOut(total);
+    }
+  }, [vendors, hasMounted]);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -30,7 +45,7 @@ export default function Home() {
                 <Warehouse className="w-5 h-5 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isLoading || !hasMounted ? (
                   <div className="space-y-4 mt-2">
                     <Skeleton className="h-8 w-3/4" />
                     <Skeleton className="h-8 w-1/2" />
