@@ -29,7 +29,11 @@ export const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => 
 
 export default function Header() {
   const pathname = usePathname();
-  const { logout } = useData();
+  const { logout, isAuthenticated } = useData();
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <header className="bg-card border-b">

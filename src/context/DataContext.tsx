@@ -39,6 +39,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const login = (email: string, pass: string) => {
     if (email === 'info@gasomateec' && pass === 'Admin@123') {
       setIsAuthenticated(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('isAuthenticated', 'true');
+      }
       router.push('/dashboard');
       return true;
     }
@@ -47,18 +50,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setIsAuthenticated(false);
+     if (typeof window !== 'undefined') {
+        localStorage.removeItem('isAuthenticated');
+      }
     router.push('/');
   };
 
   useEffect(() => {
+     if (typeof window !== 'undefined') {
+        const authStatus = localStorage.getItem('isAuthenticated');
+        if (authStatus === 'true') {
+            setIsAuthenticated(true);
+        } else {
+            setIsAuthenticated(false);
+        }
+     }
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated && pathname !== '/') {
         router.push('/');
+    } else if (isAuthenticated && pathname === '/') {
+        router.push('/dashboard');
     }
   }, [isAuthenticated, pathname, router]);
 
   useEffect(() => {
     if (!isAuthenticated) {
         setIsLoading(false);
+        setVendors([]);
+        setOxygenCylinders(0);
+        setCo2Cylinders(0);
         return;
     }
 
@@ -210,7 +232,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         title: "Stock updated",
         description: "Total cylinder counts have been saved."
     });
-  }
+  };
 
   const contextValue = { 
       vendors, 

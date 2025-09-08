@@ -3,7 +3,6 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Calendar as CalendarIcon } from 'lucide-react';
@@ -87,8 +86,6 @@ export default function Reports() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-    <Header />
     <main className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto grid gap-8">
         <h1 className="text-3xl font-bold text-foreground">Reports</h1>
@@ -154,6 +151,5 @@ export default function Reports() {
         </Card>
         </div>
     </main>
-    </div>
   );
 }

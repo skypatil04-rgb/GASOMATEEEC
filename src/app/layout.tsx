@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { DataProvider } from '@/context/DataContext';
 import { Toaster } from '@/components/ui/toaster';
+import Header from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={cn('font-sans antialiased', inter.variable)}>
         <DataProvider>
+          <Header />
           {children}
         </DataProvider>
         <Toaster />
