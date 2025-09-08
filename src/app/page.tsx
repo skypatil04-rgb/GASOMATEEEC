@@ -13,7 +13,7 @@ import { IndustrialCylinderIcon } from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('info@gasomateec');
+  const [email, setEmail] = useState('gasomateec@example.com');
   const [password, setPassword] = useState('Admin@123');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { login } = useData();
@@ -58,7 +58,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="info@gasomateec"
+                placeholder="gasomateec@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -87,4 +87,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
