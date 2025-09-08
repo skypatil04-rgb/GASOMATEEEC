@@ -1,9 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { Cylinder, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+
+const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 4h8" />
+    <path d="M10 4v2" />
+    <path d="M14 4v2" />
+    <path d="M6 8v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
+    <path d="M8 12h8" />
+  </svg>
+);
+
 
 export default function Header() {
   const pathname = usePathname();
@@ -12,7 +32,7 @@ export default function Header() {
     <header className="bg-card border-b">
       <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
-          <Cylinder className="w-6 h-6" />
+          <IndustrialCylinderIcon className="w-6 h-6" />
           <h1 className="text-xl font-bold">GASOMATEEC</h1>
         </Link>
         <nav>
