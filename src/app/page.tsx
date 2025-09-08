@@ -10,17 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { IndustrialCylinderIcon } from '@/components/Header';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('info@gasomateec');
+  const [password, setPassword] = useState('Admin@123');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { login } = useData();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) {
+    setIsLoggingIn(true);
+    const success = await login(email, password);
+    if (success) {
       router.push('/dashboard');
       toast({
         title: 'Login Successful',
@@ -33,6 +37,7 @@ export default function LoginPage() {
         variant: 'destructive',
       });
     }
+    setIsLoggingIn(false);
   };
 
   return (
@@ -57,6 +62,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -68,9 +74,11 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
               />
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
           </form>
@@ -79,3 +87,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

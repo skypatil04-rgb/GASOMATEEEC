@@ -5,24 +5,24 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { useRouter } from 'next/navigation';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { db, auth } from '../lib/firebase';
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, query, getDoc, getDocs, where } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 
-const VENDORS_STORAGE_KEY = 'gasomateecVendors';
-const OXYGEN_CYLINDERS_STORAGE_KEY = 'gasomateecTotalOxygen';
-const CO2_CYLINDERS_STORAGE_KEY = 'gasomateecTotalCO2';
-const AUTH_STORAGE_KEY = 'gasomateecAuth';
 
 interface DataContextType {
   vendors: Vendor[];
   oxygenCylinders: number;
   co2Cylinders: number;
   totalCylinders: number;
-  addVendor: (name: string) => void;
-  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => void;
-  setStock: (oxygen: number, co2: number) => void;
+  addVendor: (name: string) => Promise<void>;
+  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => Promise<void>;
+  setStock: (oxygen: number, co2: number) => Promise<void>;
   isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (email: string, pass: string) => boolean;
+  user: User | null;
+  login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
+  isAuthenticated: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -32,103 +32,103 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [oxygenCylinders, setOxygenCylinders] = useState<number>(0);
   const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-
+  
+  const isAuthenticated = !!user;
 
   useEffect(() => {
-    try {
-      const authStatus = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (authStatus === 'true') {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsLoading(false);
+      if (!currentUser) {
         const publicPaths = ['/'];
         if (!publicPaths.includes(window.location.pathname)) {
             router.push('/');
         }
       }
+    });
 
-      const storedVendors = localStorage.getItem(VENDORS_STORAGE_KEY);
-      const storedOxygenCylinders = localStorage.getItem(OXYGEN_CYLINDERS_STORAGE_KEY);
-      const storedCO2Cylinders = localStorage.getItem(CO2_CYLINDERS_STORAGE_KEY);
-
-      if (storedVendors) {
-        const parsedVendors = JSON.parse(storedVendors).map((v: Vendor) => ({...v, transactions: v.transactions || []}));
-        setVendors(parsedVendors);
-      }
-
-      if (storedOxygenCylinders) {
-        setOxygenCylinders(JSON.parse(storedOxygenCylinders));
-      } else {
-        setOxygenCylinders(50);
-      }
-
-      if (storedCO2Cylinders) {
-        setCo2Cylinders(JSON.parse(storedCO2Cylinders));
-      } else {
-        setCo2Cylinders(50);
-      }
-    } catch (error) {
-      console.error("Failed to load data from localStorage", error);
-    } finally {
-      setIsLoading(false);
-    }
+    return () => unsubscribeAuth();
   }, [router]);
-
-  const saveData = useCallback(() => {
-    if (!isLoading) {
-      try {
-        localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(vendors));
-        localStorage.setItem(OXYGEN_CYLINDERS_STORAGE_KEY, JSON.stringify(oxygenCylinders));
-        localStorage.setItem(CO2_CYLINDERS_STORAGE_KEY, JSON.stringify(co2Cylinders));
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(isAuthenticated));
-      } catch (error) {
-        console.error("Failed to save data to localStorage", error);
-      }
-    }
-  }, [vendors, oxygenCylinders, co2Cylinders, isLoading, isAuthenticated]);
-
-  useEffect(() => {
-    saveData();
-  }, [saveData]);
   
-  const login = (email: string, pass: string) => {
-    if (email === 'info@gasomateec' && pass === 'Admin@123') {
-      setIsAuthenticated(true);
-      localStorage.setItem(AUTH_STORAGE_KEY, 'true');
+  useEffect(() => {
+    if (!user) {
+      setVendors([]);
+      setOxygenCylinders(0);
+      setCo2Cylinders(0);
+      return;
+    };
+
+    const unsubscribeVendors = onSnapshot(query(collection(db, 'vendors')), (snapshot) => {
+        const vendorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vendor));
+        setVendors(vendorsData.sort((a,b) => a.name.localeCompare(b.name)));
+    });
+    
+    const unsubscribeStock = onSnapshot(doc(db, 'stock', 'total'), (doc) => {
+        if(doc.exists()){
+            const data = doc.data();
+            setOxygenCylinders(data.oxygen || 0);
+            setCo2Cylinders(data.co2 || 0);
+        } else {
+            // Initialize stock if it doesn't exist
+            setDoc(doc.ref, { oxygen: 50, co2: 50 });
+        }
+    });
+
+    return () => {
+      unsubscribeVendors();
+      unsubscribeStock();
+    };
+  }, [user]);
+
+  
+  const login = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
       return true;
+    } catch (error) {
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+       toast({ title: 'Error signing out', description: (error as Error).message, variant: 'destructive' });
+    }
   };
 
 
-  const addVendor = (name: string) => {
+  const addVendor = async (name: string) => {
     if (name.trim() === '') {
         toast({ title: "Error", description: "Vendor name cannot be empty.", variant: "destructive" });
         return;
     }
-    if (vendors.some(v => v.name.toLowerCase() === name.trim().toLowerCase())) {
+
+    const vendorsQuery = query(collection(db, 'vendors'), where('name', '==', name.trim()));
+    const querySnapshot = await getDocs(vendorsQuery);
+    if (!querySnapshot.empty) {
         toast({ title: "Error", description: "A vendor with this name already exists.", variant: "destructive" });
         return;
     }
+    
+    const newVendorRef = doc(collection(db, 'vendors'));
     const newVendor: Vendor = {
-      id: crypto.randomUUID(),
+      id: newVendorRef.id,
       name: name.trim(),
       cylindersOut: { oxygen: 0, co2: 0 },
       transactions: [],
     };
-    setVendors(prev => [...prev, newVendor]);
+    
+    await setDoc(newVendorRef, newVendor);
     toast({ title: "Success", description: `Vendor "${name.trim()}" has been added.` });
   };
 
-  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => {
+  const handleTransaction = async (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => {
     if (count <= 0) {
         toast({
             title: "Invalid count",
@@ -137,106 +137,105 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
         return;
     }
+
+    const vendorRef = doc(db, 'vendors', vendorId);
+    const stockRef = doc(db, 'stock', 'total');
     
-    let transactionSuccessful = false;
-    let newOxygenCylinders = oxygenCylinders;
-    let newCo2Cylinders = co2Cylinders;
+    try {
+      await db.runTransaction(async (transaction) => {
+        const vendorDoc = await transaction.get(vendorRef);
+        const stockDoc = await transaction.get(stockRef);
 
-    setVendors(prev =>
-      prev.map(vendor => {
-        if (vendor.id === vendorId) {
-          
-          if (ownership === 'gasomateec') {
-            if (type === 'out') {
-              const currentStock = cylinderType === 'oxygen' ? newOxygenCylinders : newCo2Cylinders;
-              if (currentStock < count) {
-                toast({
-                  title: "Action blocked",
-                  description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
-                  variant: "destructive",
-                });
-                return vendor;
-              }
-            }
+        if (!vendorDoc.exists()) throw new Error("Vendor does not exist!");
+        if (!stockDoc.exists()) throw new Error("Stock data is not initialized!");
+        
+        const vendorData = vendorDoc.data() as Omit<Vendor, 'id'>;
+        const stockData = stockDoc.data();
 
-            if (type === 'in') {
-              const netCylindersWithVendor = vendor.cylindersOut[cylinderType];
-              if (netCylindersWithVendor < count) {
-                  toast({
-                      title: 'Action blocked',
-                      description: `Cannot check in ${count} ${cylinderType.toUpperCase()} Gasomateec cylinder(s), vendor only holds ${netCylindersWithVendor}.`,
-                      variant: 'destructive',
-                  });
-                  return vendor;
-              }
+        if (ownership === 'gasomateec') {
+          if (type === 'out') {
+            const currentStock = cylinderType === 'oxygen' ? stockData.oxygen : stockData.co2;
+            if (currentStock < count) {
+              throw new Error(`Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`);
             }
           }
 
-          const newTransaction: Transaction = {
-            id: crypto.randomUUID(),
-            date: date.toISOString(),
-            type,
-            cylinderType,
-            count,
-            ownership
-          };
-          
-          if (ownership === 'gasomateec') {
-            if (cylinderType === 'oxygen') {
-                newOxygenCylinders = type === 'in' ? newOxygenCylinders + count : newOxygenCylinders - count;
-            } else {
-                newCo2Cylinders = type === 'in' ? newCo2Cylinders + count : newCo2Cylinders - count;
+          if (type === 'in') {
+            const netCylindersWithVendor = vendorData.cylindersOut[cylinderType];
+            if (netCylindersWithVendor < count) {
+              throw new Error(`Cannot check in ${count} ${cylinderType.toUpperCase()} Gasomateec cylinder(s), vendor only holds ${netCylindersWithVendor}.`);
             }
           }
-
-          const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
-          const cylindersOut = transactions
-            .filter(t => t.ownership === 'gasomateec')
-            .reduce((acc, t) => {
-              if (t.type === 'out') {
-                acc[t.cylinderType] += t.count;
-              } else {
-                acc[t.cylinderType] -= t.count;
-              }
-              return acc;
-            }, { oxygen: 0, co2: 0 });
-          
-          cylindersOut.oxygen = Math.max(0, cylindersOut.oxygen);
-          cylindersOut.co2 = Math.max(0, cylindersOut.co2);
-          
-          transactionSuccessful = true;
-
-          return {
-            ...vendor,
-            transactions,
-            cylindersOut,
-          };
         }
-        return vendor;
-      })
-    );
-      if (transactionSuccessful) {
-          setOxygenCylinders(newOxygenCylinders);
-          setCo2Cylinders(newCo2Cylinders);
-          toast({
-              title: "Transaction complete",
-              description: `${count} ${cylinderType.toUpperCase()} cylinder(s) (${ownership}) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
-          })
-      }
+
+        const newTransaction: Transaction = {
+          id: crypto.randomUUID(),
+          date: date.toISOString(),
+          type,
+          cylinderType,
+          count,
+          ownership
+        };
+
+        const newTransactions = [...vendorData.transactions, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        let updatedCylindersOut = { ...vendorData.cylindersOut };
+
+        if (ownership === 'gasomateec') {
+          updatedCylindersOut[cylinderType] = type === 'out'
+            ? updatedCylindersOut[cylinderType] + count
+            : updatedCylindersOut[cylinderType] - count;
+        }
+
+        transaction.update(vendorRef, { 
+          transactions: newTransactions,
+          cylindersOut: updatedCylindersOut 
+        });
+
+        if (ownership === 'gasomateec') {
+          const stockUpdate: { [key: string]: number } = {};
+          const fieldToUpdate = cylinderType === 'oxygen' ? 'oxygen' : 'co2';
+          stockUpdate[fieldToUpdate] = type === 'in' ? stockData[fieldToUpdate] + count : stockData[fieldToUpdate] - count;
+          transaction.update(stockRef, stockUpdate);
+        }
+      });
+
+      toast({
+          title: "Transaction complete",
+          description: `${count} ${cylinderType.toUpperCase()} cylinder(s) (${ownership}) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
+      });
+
+    } catch (e: any) {
+      toast({ title: "Transaction failed", description: e.message, variant: "destructive" });
+    }
   };
   
-  const setStock = (oxygen: number, co2: number) => {
-    setOxygenCylinders(oxygen);
-    setCo2Cylinders(co2);
+  const setStock = async (oxygen: number, co2: number) => {
+    const stockRef = doc(db, 'stock', 'total');
+    await setDoc(stockRef, { oxygen, co2 }, { merge: true });
     toast({
         title: "Stock updated",
         description: "Total cylinder counts have been saved."
     });
   }
 
+  const contextValue = { 
+      vendors, 
+      oxygenCylinders, 
+      co2Cylinders, 
+      totalCylinders: oxygenCylinders + co2Cylinders, 
+      addVendor, 
+      handleTransaction, 
+      setStock, 
+      isLoading, 
+      user,
+      login,
+      logout,
+      isAuthenticated
+  };
+
   return (
-    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, setStock, isLoading, isAuthenticated, login, logout }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );
