@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
-import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowDown, ArrowUp, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -28,15 +27,32 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const [date, setDate] = useState<Date>(new Date());
   const [oxygenOwnership, setOxygenOwnership] = useState<Ownership>('gasomateec');
   const [co2Ownership, setCo2Ownership] = useState<Ownership>('gasomateec');
-  
-  const vendor = vendors.find(v => v.id === vendorId);
+  const [vendor, setVendor] = useState(vendors.find(v => v.id === vendorId));
+  const [hasMounted, setHasMounted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    setHasMounted(true);
+    setVendor(vendors.find(v => v.id === vendorId));
+  }, [vendors, vendorId]);
+
+
+  if (isLoading || !hasMounted) {
     return <Skeleton className="h-96 w-full" />;
   }
 
   if (!vendor) {
-    notFound();
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle /> Vendor Not Found
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p>The vendor with the specified ID could not be found. It may have been deleted.</p>
+            </CardContent>
+        </Card>
+    );
   }
 
   return (
