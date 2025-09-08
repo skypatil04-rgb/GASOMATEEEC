@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Warehouse, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,10 +21,20 @@ import { Label } from '@/components/ui/label';
 export default function TotalCylinderCount() {
   const { oxygenCylinders, co2Cylinders, isLoading, setStock } = useData();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [newOxygenCount, setNewOxygenCount] = useState(oxygenCylinders);
-  const [newCo2Count, setNewCo2Count] = useState(co2Cylinders);
+  
+  // These will hold the temporary values for the form.
+  const [newOxygenCount, setNewOxygenCount] = useState(0);
+  const [newCo2Count, setNewCo2Count] = useState(0);
+
+  const handleOpenDialog = () => {
+    // When opening, initialize form state from the main context.
+    setNewOxygenCount(oxygenCylinders);
+    setNewCo2Count(co2Cylinders);
+    setIsEditDialogOpen(true);
+  };
 
   const handleSave = () => {
+    // On save, submit the form's local state.
     setStock(newOxygenCount, newCo2Count);
     setIsEditDialogOpen(false);
   };
@@ -34,11 +44,7 @@ export default function TotalCylinderCount() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Cylinders in Stock</CardTitle>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-            setNewOxygenCount(oxygenCylinders);
-            setNewCo2Count(co2Cylinders);
-            setIsEditDialogOpen(true);
-          }}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleOpenDialog}>
             <Pencil className="h-4 w-4 text-muted-foreground" />
           </Button>
         </CardHeader>
