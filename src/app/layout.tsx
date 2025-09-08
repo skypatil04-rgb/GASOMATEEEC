@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { DataProvider } from '@/context/DataContext';
+import { AuthProvider, DataProvider } from '@/context/DataContext';
 import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
@@ -20,10 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={cn('font-sans antialiased', inter.variable)}>
-        <DataProvider>
-          {children}
-          <Toaster />
-        </DataProvider>
+        <AuthProvider>
+          <DataProvider>{children}</DataProvider>
+        </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

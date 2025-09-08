@@ -4,10 +4,87 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '../lib/firebase';
-import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
+import { User, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from 'firebase/auth';
 
 
+// Auth Context
+interface AuthContextType {
+    user: User | null;
+    isLoading: boolean;
+    error: string | null;
+    login: (email: string, password: string) => Promise<boolean>;
+    logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const login = async (email: string, password: string) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast({ title: 'Login Successful', description: 'Welcome back!' });
+            setIsLoading(false);
+            return true;
+        } catch (err: any) {
+             if (err.code === 'auth/user-not-found') {
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    toast({ title: 'Account Created', description: 'New user registered and logged in.' });
+                    setIsLoading(false);
+                    return true;
+                } catch (createErr: any) {
+                    setError(`Failed to create account: ${createErr.message}`);
+                    toast({ title: 'Registration Failed', description: `Could not create account: ${createErr.message}`, variant: 'destructive' });
+                    setIsLoading(false);
+                    return false;
+                }
+            } else {
+                setError(err.message);
+                toast({ title: 'Login Failed', description: `Invalid credentials or network error. Please try again.`, variant: 'destructive' });
+                setIsLoading(false);
+                return false;
+            }
+        }
+    };
+    
+
+    const logout = async () => {
+        await signOut(auth);
+        toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
+    };
+
+    const value = { user, isLoading, error, login, logout };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
+
+
+// Data Context
 interface DataContextType {
   vendors: Vendor[];
   oxygenCylinders: number;
@@ -27,8 +104,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   useEffect(() => {
+    if (!user) {
+        setVendors([]);
+        setOxygenCylinders(0);
+        setCo2Cylinders(0);
+        setIsLoading(false);
+        return;
+    };
+
     setIsLoading(true);
 
     const vendorsQuery = query(collection(db, 'vendors'));
@@ -62,7 +148,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       unsubscribeVendors();
       unsubscribeStock();
     };
-  }, [toast]);
+  }, [user, toast]);
 
   
   const addVendor = async (name: string) => {
