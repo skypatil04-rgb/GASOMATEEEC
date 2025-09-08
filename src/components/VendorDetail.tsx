@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,17 +28,55 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const [date, setDate] = useState<Date>(new Date());
   const [oxygenOwnership, setOxygenOwnership] = useState<Ownership>('gasomateec');
   const [co2Ownership, setCo2Ownership] = useState<Ownership>('gasomateec');
-  const [vendor, setVendor] = useState(vendors.find(v => v.id === vendorId));
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-    setVendor(vendors.find(v => v.id === vendorId));
-  }, [vendors, vendorId]);
+  }, []);
+
+  const vendor = useMemo(() => vendors.find(v => v.id === vendorId), [vendors, vendorId]);
+  
+  const sortedTransactions = useMemo(() => {
+    if (!vendor?.transactions) return [];
+    return [...vendor.transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [vendor?.transactions]);
+
+
+  const onTransaction = async (type: 'in' | 'out', cylinderType: 'oxygen' | 'co2') => {
+    setIsSubmitting(true);
+    let count;
+    let ownership;
+    if (cylinderType === 'oxygen') {
+      count = type === 'in' ? oxygenInCount : oxygenOutCount;
+      ownership = oxygenOwnership;
+    } else {
+      count = type === 'in' ? co2InCount : co2OutCount;
+      ownership = co2Ownership;
+    }
+
+    if(vendor) {
+        await handleTransaction(vendor.id, type, cylinderType, count, date, ownership);
+    }
+    
+    // Reset inputs after transaction
+    if (cylinderType === 'oxygen') {
+        type === 'in' ? setOxygenInCount(0) : setOxygenOutCount(0);
+    } else {
+        type === 'in' ? setCo2InCount(0) : setCo2OutCount(0);
+    }
+    setIsSubmitting(false);
+  };
 
 
   if (isLoading || !hasMounted) {
-    return <Skeleton className="h-96 w-full" />;
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+    )
   }
 
   if (!vendor) {
@@ -106,7 +145,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
             <div className="space-y-8">
               <div className="p-4 border rounded-lg">
                 <h4 className="font-medium text-center mb-4">Oxygen Cylinder</h4>
-                 <RadioGroup defaultValue="gasomateec" className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setOxygenOwnership(value)}>
+                 <RadioGroup value={oxygenOwnership} className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setOxygenOwnership(value)}>
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="gasomateec" id="o2-gasomateec" />
                         <Label htmlFor="o2-gasomateec">Gasomateec</Label>
@@ -118,27 +157,23 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 </RadioGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                     <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                     <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" disabled={isSubmitting}/>
                     <Button
                       variant="default"
                       className="transition-transform active:scale-95"
-                      onClick={() => {
-                        handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount, date, oxygenOwnership);
-                        setOxygenInCount(0);
-                      }}
+                      onClick={() => onTransaction('in', 'oxygen')}
+                      disabled={isSubmitting || oxygenInCount <= 0}
                     >
                       In <ArrowUp className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                    <Input type="number" value={oxygenOutCount} onChange={e => setOxygenOutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" disabled={isSubmitting}/>
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
-                      onClick={() => {
-                        handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date, oxygenOwnership);
-                        setOxygenOutCount(0);
-                      }}
+                      onClick={() => onTransaction('out', 'oxygen')}
+                       disabled={isSubmitting || oxygenOutCount <= 0}
                     >
                       Out <ArrowDown className="ml-2 h-5 w-5" />
                     </Button>
@@ -147,7 +182,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
               </div>
               <div className="p-4 border rounded-lg">
                 <h4 className="font-medium text-center mb-4">CO2 Cylinder</h4>
-                 <RadioGroup defaultValue="gasomateec" className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setCo2Ownership(value)}>
+                 <RadioGroup value={co2Ownership} className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setCo2Ownership(value)}>
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="gasomateec" id="co2-gasomateec" />
                         <Label htmlFor="co2-gasomateec">Gasomateec</Label>
@@ -159,27 +194,23 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 </RadioGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div className="flex items-center gap-2">
-                      <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                      <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" disabled={isSubmitting}/>
                       <Button
                           variant="default"
                           className="transition-transform active:scale-95"
-                          onClick={() => {
-                            handleTransaction(vendor.id, 'in', 'co2', co2InCount, date, co2Ownership);
-                            setCo2InCount(0);
-                          }}
+                          onClick={() => onTransaction('in', 'co2')}
+                          disabled={isSubmitting || co2InCount <= 0}
                       >
                           In <ArrowUp className="ml-2 h-5 w-5" />
                       </Button>
                    </div>
                    <div className="flex items-center gap-2">
-                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
+                     <Input type="number" value={co2OutCount} onChange={e => setCo2OutCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" disabled={isSubmitting}/>
                     <Button
                       variant="destructive"
                       className="transition-transform active:scale-95"
-                      onClick={() => {
-                        handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date, co2Ownership);
-                        setCo2OutCount(0);
-                      }}
+                      onClick={() => onTransaction('out', 'co2')}
+                      disabled={isSubmitting || co2OutCount <= 0}
                     >
                      Out <ArrowDown className="ml-2 h-5 w-5" />
                     </Button>
@@ -208,10 +239,10 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vendor.transactions && vendor.transactions.length > 0 ? (
-                vendor.transactions.map(tx => (
+              {sortedTransactions.length > 0 ? (
+                sortedTransactions.map(tx => (
                   <TableRow key={tx.id}>
-                    <TableCell>{format(new Date(tx.date), 'PP')}</TableCell>
+                    <TableCell>{format(new Date(tx.date), 'PP p')}</TableCell>
                     <TableCell>
                       <span className={cn(tx.type === 'in' ? 'text-primary' : 'text-destructive')}>
                         {tx.type.toUpperCase()}

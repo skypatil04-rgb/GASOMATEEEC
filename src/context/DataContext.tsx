@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { db, auth } from '../lib/firebase';
-import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, query, getDoc, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 
 
@@ -41,8 +41,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      // We are not truly loading anymore once we have a user status
       setIsLoading(false);
       if (!currentUser) {
+        // If user is not logged in, only allow access to the login page
         const publicPaths = ['/'];
         if (!publicPaths.includes(window.location.pathname)) {
             router.push('/');
@@ -54,42 +56,62 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [router]);
   
   useEffect(() => {
+    // If there is no user, clear all data and don't set up listeners
     if (!user) {
       setVendors([]);
       setOxygenCylinders(0);
       setCo2Cylinders(0);
+      setIsLoading(false); // No user, so we are done loading.
       return;
     };
 
-    const unsubscribeVendors = onSnapshot(query(collection(db, 'vendors')), (snapshot) => {
+    // We have a user, start in a loading state until initial data is fetched.
+    setIsLoading(true);
+
+    const vendorsQuery = query(collection(db, 'vendors'));
+    const unsubscribeVendors = onSnapshot(vendorsQuery, (snapshot) => {
         const vendorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vendor));
         setVendors(vendorsData.sort((a,b) => a.name.localeCompare(b.name)));
+        setIsLoading(false); // Vendors loaded
+    }, (error) => {
+        console.error("Error fetching vendors:", error);
+        toast({ title: "Error", description: "Could not fetch vendor data.", variant: "destructive" });
+        setIsLoading(false);
     });
     
-    const unsubscribeStock = onSnapshot(doc(db, 'stock', 'total'), (doc) => {
+    const stockRef = doc(db, 'stock', 'total');
+    const unsubscribeStock = onSnapshot(stockRef, (doc) => {
         if(doc.exists()){
             const data = doc.data();
             setOxygenCylinders(data.oxygen || 0);
             setCo2Cylinders(data.co2 || 0);
         } else {
-            // Initialize stock if it doesn't exist
+            // Initialize stock if it doesn't exist, this should only run once
             setDoc(doc.ref, { oxygen: 50, co2: 50 });
         }
+        setIsLoading(false); // Stock loaded
+    }, (error) => {
+        console.error("Error fetching stock:", error);
+        toast({ title: "Error", description: "Could not fetch stock data.", variant: "destructive" });
+        setIsLoading(false);
     });
 
     return () => {
       unsubscribeVendors();
       unsubscribeStock();
     };
-  }, [user]);
+  }, [user, toast]);
 
   
   const login = async (email: string, pass: string) => {
+    setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       return true;
     } catch (error) {
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -117,8 +139,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     
     const newVendorRef = doc(collection(db, 'vendors'));
-    const newVendor: Vendor = {
-      id: newVendorRef.id,
+    const newVendor: Omit<Vendor, 'id'> = {
       name: name.trim(),
       cylindersOut: { oxygen: 0, co2: 0 },
       transactions: [],
@@ -129,6 +150,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const handleTransaction = async (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to perform a transaction.", variant: "destructive" });
+        return;
+    }
     if (count <= 0) {
         toast({
             title: "Invalid count",
@@ -142,7 +167,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const stockRef = doc(db, 'stock', 'total');
     
     try {
-      await db.runTransaction(async (transaction) => {
+      await runTransaction(db, async (transaction) => {
         const vendorDoc = await transaction.get(vendorRef);
         const stockDoc = await transaction.get(stockRef);
 
@@ -152,6 +177,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const vendorData = vendorDoc.data() as Omit<Vendor, 'id'>;
         const stockData = stockDoc.data();
 
+        // Stock validation only for Gasomateec cylinders
         if (ownership === 'gasomateec') {
           if (type === 'out') {
             const currentStock = cylinderType === 'oxygen' ? stockData.oxygen : stockData.co2;
@@ -177,10 +203,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ownership
         };
 
-        const newTransactions = [...vendorData.transactions, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const newTransactions = [newTransaction, ...vendorData.transactions];
         
         let updatedCylindersOut = { ...vendorData.cylindersOut };
 
+        // Only adjust the net count for Gasomateec cylinders
         if (ownership === 'gasomateec') {
           updatedCylindersOut[cylinderType] = type === 'out'
             ? updatedCylindersOut[cylinderType] + count
@@ -192,11 +219,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           cylindersOut: updatedCylindersOut 
         });
 
+        // Only adjust stock for Gasomateec cylinders
         if (ownership === 'gasomateec') {
-          const stockUpdate: { [key: string]: number } = {};
           const fieldToUpdate = cylinderType === 'oxygen' ? 'oxygen' : 'co2';
-          stockUpdate[fieldToUpdate] = type === 'in' ? stockData[fieldToUpdate] + count : stockData[fieldToUpdate] - count;
-          transaction.update(stockRef, stockUpdate);
+          const newStockCount = type === 'in' ? stockData[fieldToUpdate] + count : stockData[fieldToUpdate] - count;
+          transaction.update(stockRef, { [fieldToUpdate]: newStockCount });
         }
       });
 
@@ -211,6 +238,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
   
   const setStock = async (oxygen: number, co2: number) => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
+        return;
+    }
     const stockRef = doc(db, 'stock', 'total');
     await setDoc(stockRef, { oxygen, co2 }, { merge: true });
     toast({
