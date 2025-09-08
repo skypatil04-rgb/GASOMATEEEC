@@ -1,11 +1,11 @@
-
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
+import { useRouter, usePathname } from 'next/navigation';
 
 
 // Data Context
@@ -18,6 +18,9 @@ interface DataContextType {
   handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => Promise<void>;
   setStock: (oxygen: number, co2: number) => Promise<void>;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, pass: string) => boolean;
+  logout: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -27,9 +30,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [oxygenCylinders, setOxygenCylinders] = useState<number>(0);
   const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   
+  // Simple client-side auth
+  const login = (email: string, pass: string) => {
+    if (email === 'info@gasomateec' && pass === 'Admin@123') {
+      setIsAuthenticated(true);
+      router.push('/dashboard');
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    router.push('/');
+  };
+
   useEffect(() => {
+    if (!isAuthenticated && pathname !== '/') {
+        router.push('/');
+    }
+  }, [isAuthenticated, pathname, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+        setIsLoading(false);
+        return;
+    }
+
     setIsLoading(true);
 
     const vendorsQuery = query(collection(db, 'vendors'));
@@ -63,7 +95,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       unsubscribeVendors();
       unsubscribeStock();
     };
-  }, [toast]);
+  }, [toast, isAuthenticated]);
 
   
   const addVendor = async (name: string) => {
@@ -188,7 +220,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addVendor, 
       handleTransaction, 
       setStock, 
-      isLoading
+      isLoading,
+      isAuthenticated,
+      login,
+      logout
   };
 
   return (

@@ -20,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={cn('font-sans antialiased', inter.variable)}>
-          <DataProvider>{children}</DataProvider>
+        <DataProvider>
+          {children}
+        </DataProvider>
         <Toaster />
       </body>
     </html>
