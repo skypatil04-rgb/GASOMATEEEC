@@ -1,12 +1,15 @@
+
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const VENDORS_STORAGE_KEY = 'gasomateecVendors';
 const OXYGEN_CYLINDERS_STORAGE_KEY = 'gasomateecTotalOxygen';
 const CO2_CYLINDERS_STORAGE_KEY = 'gasomateecTotalCO2';
+const AUTH_STORAGE_KEY = 'gasomateecAuth';
 
 interface DataContextType {
   vendors: Vendor[];
@@ -17,6 +20,9 @@ interface DataContextType {
   handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => void;
   setStock: (oxygen: number, co2: number) => void;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, pass: string) => boolean;
+  logout: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -26,10 +32,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [oxygenCylinders, setOxygenCylinders] = useState<number>(0);
   const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+
 
   useEffect(() => {
     try {
+      const authStatus = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (authStatus === 'true') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        const publicPaths = ['/'];
+        if (!publicPaths.includes(window.location.pathname)) {
+            router.push('/');
+        }
+      }
+
       const storedVendors = localStorage.getItem(VENDORS_STORAGE_KEY);
       const storedOxygenCylinders = localStorage.getItem(OXYGEN_CYLINDERS_STORAGE_KEY);
       const storedCO2Cylinders = localStorage.getItem(CO2_CYLINDERS_STORAGE_KEY);
@@ -55,7 +75,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const saveData = useCallback(() => {
     if (!isLoading) {
@@ -63,15 +83,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(vendors));
         localStorage.setItem(OXYGEN_CYLINDERS_STORAGE_KEY, JSON.stringify(oxygenCylinders));
         localStorage.setItem(CO2_CYLINDERS_STORAGE_KEY, JSON.stringify(co2Cylinders));
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(isAuthenticated));
       } catch (error) {
         console.error("Failed to save data to localStorage", error);
       }
     }
-  }, [vendors, oxygenCylinders, co2Cylinders, isLoading]);
+  }, [vendors, oxygenCylinders, co2Cylinders, isLoading, isAuthenticated]);
 
   useEffect(() => {
     saveData();
   }, [saveData]);
+  
+  const login = (email: string, pass: string) => {
+    if (email === 'info@gasomateec' && pass === 'Admin@123') {
+      setIsAuthenticated(true);
+      localStorage.setItem(AUTH_STORAGE_KEY, 'true');
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  };
+
 
   const addVendor = (name: string) => {
     if (name.trim() === '') {
@@ -200,7 +236,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, setStock, isLoading }}>
+    <DataContext.Provider value={{ vendors, oxygenCylinders, co2Cylinders, totalCylinders: oxygenCylinders + co2Cylinders, addVendor, handleTransaction, setStock, isLoading, isAuthenticated, login, logout }}>
       {children}
     </DataContext.Provider>
   );

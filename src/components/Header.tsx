@@ -1,11 +1,14 @@
+
 'use client';
 
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { FileText, LogOut } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useData } from '@/context/DataContext';
+import { Button } from './ui/button';
 
-const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => (
+export const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     xmlns="http://www.w3.org/2000/svg"
@@ -27,15 +30,22 @@ const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function Header() {
   const pathname = usePathname();
+  const { logout } = useData();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  }
 
   return (
     <header className="bg-card border-b">
       <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
+        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
           <IndustrialCylinderIcon className="w-6 h-6" />
           <h1 className="text-xl font-bold">GASOMATEEC</h1>
         </Link>
-        <nav>
+        <nav className="flex items-center gap-4">
           <Link
             href="/reports"
             className={cn(
@@ -46,6 +56,10 @@ export default function Header() {
             <FileText className="w-5 h-5" />
             Reports
           </Link>
+           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+             <LogOut className="w-5 h-5 mr-2" />
+             Sign Out
+           </Button>
         </nav>
       </div>
     </header>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -11,8 +12,9 @@ import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function ReportsPage() {
+function Reports() {
   const { vendors, isLoading } = useData();
   const [date, setDate] = useState<DateRange | undefined>();
 
@@ -45,7 +47,7 @@ export default function ReportsPage() {
     }
 
     // Define CSV headers
-    const headers = ['Vendor Name', 'Date', 'Type', 'Cylinder Type', 'Count'];
+    const headers = ['Vendor Name', 'Date', 'Type', 'Cylinder Type', 'Count', 'Ownership'];
 
     // Convert transaction data to CSV rows
     const csvRows = allTransactions.map(tx => {
@@ -56,6 +58,7 @@ export default function ReportsPage() {
         tx.type.toUpperCase(),
         tx.cylinderType.toUpperCase(),
         tx.count,
+        tx.ownership ? tx.ownership.toUpperCase() : 'GASOMATEEC' // Handle old data
       ].join(',');
     });
 
@@ -154,4 +157,13 @@ export default function ReportsPage() {
       </main>
     </div>
   );
+}
+
+
+export default function ReportsPage() {
+    return (
+        <ProtectedRoute>
+            <Reports />
+        </ProtectedRoute>
+    )
 }

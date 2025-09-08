@@ -1,3 +1,4 @@
+
 'use client';
 
 import VendorDetail from '@/components/VendorDetail';
@@ -7,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import React from 'react';
 import { useParams } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function VendorDetailPage() {
+function VendorPage() {
   const params = useParams();
   const vendorId = params.vendorId as string;
 
@@ -29,3 +31,12 @@ export default function VendorDetailPage() {
     </div>
   );
 }
+
+export default function VendorDetailPage() {
+    return (
+        <ProtectedRoute>
+            <VendorPage />
+        </ProtectedRoute>
+    )
+}
+
