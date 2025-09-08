@@ -12,9 +12,8 @@ import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
-function Reports() {
+export default function Reports() {
   const { vendors, isLoading } = useData();
   const [date, setDate] = useState<DateRange | undefined>();
 
@@ -157,13 +156,4 @@ function Reports() {
       </main>
     </div>
   );
-}
-
-
-export default function ReportsPage() {
-    return (
-        <ProtectedRoute>
-            <Reports />
-        </ProtectedRoute>
-    )
 }

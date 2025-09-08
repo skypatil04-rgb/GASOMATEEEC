@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import React from 'react';
 import { useParams } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
-function VendorPage() {
+export default function VendorPage() {
   const params = useParams();
   const vendorId = params.vendorId as string;
 
@@ -31,12 +30,3 @@ function VendorPage() {
     </div>
   );
 }
-
-export default function VendorDetailPage() {
-    return (
-        <ProtectedRoute>
-            <VendorPage />
-        </ProtectedRoute>
-    )
-}
-

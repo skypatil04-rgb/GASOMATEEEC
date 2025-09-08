@@ -3,9 +3,8 @@
 import AddVendorForm from '@/components/AddVendorForm';
 import VendorList from '@/components/VendorList';
 import Header from '@/components/Header';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
-function Vendors() {
+export default function Vendors() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -18,12 +17,4 @@ function Vendors() {
       </main>
     </div>
   );
-}
-
-export default function VendorsPage() {
-    return (
-        <ProtectedRoute>
-            <Vendors />
-        </ProtectedRoute>
-    )
 }

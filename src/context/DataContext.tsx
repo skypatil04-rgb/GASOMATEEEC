@@ -2,12 +2,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Vendor, CylinderTransaction, Transaction } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, writeBatch, query, getDoc, getDocs, where, runTransaction } from 'firebase/firestore';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 
 
 interface DataContextType {
@@ -19,10 +17,6 @@ interface DataContextType {
   handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => Promise<void>;
   setStock: (oxygen: number, co2: number) => Promise<void>;
   isLoading: boolean;
-  user: User | null;
-  login: (email: string, pass: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -32,36 +26,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [oxygenCylinders, setOxygenCylinders] = useState<number>(0);
   const [co2Cylinders, setCo2Cylinders] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
-  const router = useRouter();
-  
-  const isAuthenticated = !!user;
-
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-      if (!currentUser) {
-        const publicPaths = ['/'];
-        if (!publicPaths.includes(window.location.pathname)) {
-            router.push('/');
-        }
-      }
-    });
-
-    return () => unsubscribeAuth();
-  }, [router]);
   
   useEffect(() => {
-    if (!user) {
-      setVendors([]);
-      setOxygenCylinders(0);
-      setCo2Cylinders(0);
-      setIsLoading(false); 
-      return;
-    };
-
     setIsLoading(true);
 
     const vendorsQuery = query(collection(db, 'vendors'));
@@ -95,45 +62,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       unsubscribeVendors();
       unsubscribeStock();
     };
-  }, [user, toast]);
+  }, [toast]);
 
   
-  const login = async (email: string, pass: string) => {
-    setIsLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      return true;
-    } catch (error: any) {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        toast({
-          title: 'Login Failed',
-          description: "Invalid credentials. Please create this user in the Firebase Authentication console.",
-          variant: 'destructive',
-          duration: 9000,
-        });
-      } else {
-        toast({
-          title: 'Login Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      }
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      router.push('/');
-    } catch (error) {
-       toast({ title: 'Error signing out', description: (error as Error).message, variant: 'destructive' });
-    }
-  };
-
-
   const addVendor = async (name: string) => {
     if (name.trim() === '') {
         toast({ title: "Error", description: "Vendor name cannot be empty.", variant: "destructive" });
@@ -159,10 +90,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const handleTransaction = useCallback(async (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to perform a transaction.", variant: "destructive" });
-        return;
-    }
     if (count <= 0) {
         toast({
             title: "Invalid count",
@@ -241,13 +168,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (e: any) {
       toast({ title: "Transaction failed", description: e.message, variant: "destructive" });
     }
-  }, [user, toast]);
+  }, [toast]);
   
   const setStock = async (oxygen: number, co2: number) => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
-        return;
-    }
     const stockRef = doc(db, 'stock', 'total');
     await setDoc(stockRef, { oxygen, co2 }, { merge: true });
     toast({
@@ -264,11 +187,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addVendor, 
       handleTransaction, 
       setStock, 
-      isLoading, 
-      user,
-      login,
-      logout,
-      isAuthenticated
+      isLoading
   };
 
   return (
