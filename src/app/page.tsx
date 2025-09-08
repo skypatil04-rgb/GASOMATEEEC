@@ -31,11 +31,7 @@ export default function LoginPage() {
         description: 'Welcome back!',
       });
     } else {
-      toast({
-        title: 'Login Failed',
-        description: 'Invalid email or password.',
-        variant: 'destructive',
-      });
+      // The toast is now handled within the login function for better error details.
     }
     setIsLoggingIn(false);
   };
