@@ -12,7 +12,6 @@ import { DateRange } from 'react-day-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function Reports() {
   const { vendors, isLoading } = useData();
@@ -88,75 +87,73 @@ export default function Reports() {
   };
 
   return (
-    <ProtectedRoute>
-        <div className="flex flex-col min-h-screen bg-background">
-        <Header />
-        <main className="flex-1 p-4 md:p-8">
-            <div className="max-w-4xl mx-auto grid gap-8">
-            <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+    <div className="flex flex-col min-h-screen bg-background">
+    <Header />
+    <main className="flex-1 p-4 md:p-8">
+        <div className="max-w-4xl mx-auto grid gap-8">
+        <h1 className="text-3xl font-bold text-foreground">Reports</h1>
 
-            <Card>
-                <CardHeader>
-                <CardTitle>Download Transaction History</CardTitle>
-                <CardDescription>
-                    Select a start and end date to export a log of cylinder movements. If no range is selected, all transactions will be downloaded.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                <div className="grid gap-2">
-                    <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                            "w-full sm:w-[300px] justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                        )}
-                        >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date?.from ? (
-                            date.to ? (
-                            <>
-                                {format(date.from, "LLL dd, y")} -{" "}
-                                {format(date.to, "LLL dd, y")}
-                            </>
-                            ) : (
-                            format(date.from, "LLL dd, y")
-                            )
-                        ) : (
-                            <span>Pick a date range</span>
-                        )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={date?.from}
-                        selected={date}
-                        onSelect={setDate}
-                        numberOfMonths={2}
-                        />
-                    </PopoverContent>
-                    </Popover>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    <Button onClick={handleDownload} disabled={isLoading}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Transactions (CSV)
-                    </Button>
-                    {date && (
-                    <Button onClick={() => setDate(undefined)} variant="ghost">Clear Dates</Button>
+        <Card>
+            <CardHeader>
+            <CardTitle>Download Transaction History</CardTitle>
+            <CardDescription>
+                Select a start and end date to export a log of cylinder movements. If no range is selected, all transactions will be downloaded.
+            </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+            <div className="grid gap-2">
+                <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                        "w-full sm:w-[300px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
                     )}
-                </div>
-
-                </CardContent>
-            </Card>
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date?.from ? (
+                        date.to ? (
+                        <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                        </>
+                        ) : (
+                        format(date.from, "LLL dd, y")
+                        )
+                    ) : (
+                        <span>Pick a date range</span>
+                    )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={setDate}
+                    numberOfMonths={2}
+                    />
+                </PopoverContent>
+                </Popover>
             </div>
-        </main>
+
+            <div className="flex flex-wrap gap-2">
+                <Button onClick={handleDownload} disabled={isLoading}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Transactions (CSV)
+                </Button>
+                {date && (
+                <Button onClick={() => setDate(undefined)} variant="ghost">Clear Dates</Button>
+                )}
+            </div>
+
+            </CardContent>
+        </Card>
         </div>
-    </ProtectedRoute>
+    </main>
+    </div>
   );
 }

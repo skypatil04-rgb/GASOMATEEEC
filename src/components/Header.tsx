@@ -2,11 +2,9 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, Home, LogOut, Users, Warehouse } from 'lucide-react';
+import { FileText, Home, Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
-import { useAuth } from '@/context/DataContext';
 
 export const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -30,22 +28,20 @@ export const IndustrialCylinderIcon = (props: React.SVGProps<SVGSVGElement>) => 
 
 export default function Header() {
   const pathname = usePathname();
-  const { logout, user } = useAuth();
-
 
   return (
     <header className="bg-card border-b">
       <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
+        <Link href="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
           <IndustrialCylinderIcon className="w-6 h-6" />
           <h1 className="text-xl font-bold">GASOMATEEC</h1>
         </Link>
         <nav className="flex items-center gap-4">
            <Link
-            href="/dashboard"
+            href="/"
             className={cn(
               'flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors',
-              pathname === '/dashboard' && 'text-primary'
+              pathname === '/' && 'text-primary'
             )}
           >
             <Home className="w-5 h-5" />
@@ -71,12 +67,6 @@ export default function Header() {
             <FileText className="w-5 h-5" />
             Reports
           </Link>
-          { user &&
-            <Button onClick={logout} variant="ghost" size="sm">
-                <LogOut className="mr-2 h-4 w-4"/>
-                Sign Out
-            </Button>
-          }
         </nav>
       </div>
     </header>
