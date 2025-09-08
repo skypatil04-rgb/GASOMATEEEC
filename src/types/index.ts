@@ -9,6 +9,7 @@ export interface Transaction {
   type: 'in' | 'out';
   cylinderType: 'oxygen' | 'co2';
   count: number;
+  ownership: 'gasomateec' | 'self';
 }
 
 export interface Vendor {

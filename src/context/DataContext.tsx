@@ -14,7 +14,7 @@ interface DataContextType {
   co2Cylinders: number;
   totalCylinders: number;
   addVendor: (name: string) => void;
-  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date) => void;
+  handleTransaction: (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => void;
   setStock: (oxygen: number, co2: number) => void;
   isLoading: boolean;
 }
@@ -92,7 +92,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     toast({ title: "Success", description: `Vendor "${name.trim()}" has been added.` });
   };
 
-  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date) => {
+  const handleTransaction = (vendorId: string, type: 'in' | 'out', cylinderType: keyof CylinderTransaction, count: number, date: Date, ownership: 'gasomateec' | 'self') => {
     if (count <= 0) {
         toast({
             title: "Invalid count",
@@ -110,27 +110,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       prev.map(vendor => {
         if (vendor.id === vendorId) {
           
-          if (type === 'out') {
-            const currentStock = cylinderType === 'oxygen' ? newOxygenCylinders : newCo2Cylinders;
-            if (currentStock < count) {
-              toast({
-                title: "Action blocked",
-                description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
-                variant: "destructive",
-              });
-              return vendor;
-            }
-          }
-
-          if (type === 'in') {
-            const netCylindersWithVendor = vendor.cylindersOut[cylinderType];
-            if (netCylindersWithVendor < count) {
+          if (ownership === 'gasomateec') {
+            if (type === 'out') {
+              const currentStock = cylinderType === 'oxygen' ? newOxygenCylinders : newCo2Cylinders;
+              if (currentStock < count) {
                 toast({
-                    title: 'Action blocked',
-                    description: `Cannot check in ${count} ${cylinderType.toUpperCase()} cylinder(s), vendor only holds ${netCylindersWithVendor}.`,
-                    variant: 'destructive',
+                  title: "Action blocked",
+                  description: `Cannot check out ${count} ${cylinderType.toUpperCase()} cylinder(s), only ${currentStock} in stock.`,
+                  variant: "destructive",
                 });
                 return vendor;
+              }
+            }
+
+            if (type === 'in') {
+              const netCylindersWithVendor = vendor.cylindersOut[cylinderType];
+              if (netCylindersWithVendor < count) {
+                  toast({
+                      title: 'Action blocked',
+                      description: `Cannot check in ${count} ${cylinderType.toUpperCase()} Gasomateec cylinder(s), vendor only holds ${netCylindersWithVendor}.`,
+                      variant: 'destructive',
+                  });
+                  return vendor;
+              }
             }
           }
 
@@ -139,18 +141,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
             date: date.toISOString(),
             type,
             cylinderType,
-            count
+            count,
+            ownership
           };
-
-          if (cylinderType === 'oxygen') {
-              newOxygenCylinders = type === 'in' ? newOxygenCylinders + count : newOxygenCylinders - count;
-          } else {
-              newCo2Cylinders = type === 'in' ? newCo2Cylinders + count : newCo2Cylinders - count;
+          
+          if (ownership === 'gasomateec') {
+            if (cylinderType === 'oxygen') {
+                newOxygenCylinders = type === 'in' ? newOxygenCylinders + count : newOxygenCylinders - count;
+            } else {
+                newCo2Cylinders = type === 'in' ? newCo2Cylinders + count : newCo2Cylinders - count;
+            }
           }
 
           const transactions = [...(vendor.transactions || []), newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
+          
           const cylindersOut = transactions
+            .filter(t => t.ownership === 'gasomateec')
             .reduce((acc, t) => {
               if (t.type === 'out') {
                 acc[t.cylinderType] += t.count;
@@ -179,7 +185,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setCo2Cylinders(newCo2Cylinders);
           toast({
               title: "Transaction complete",
-              description: `${count} ${cylinderType.toUpperCase()} cylinder(s) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
+              description: `${count} ${cylinderType.toUpperCase()} cylinder(s) (${ownership}) ${type === 'in' ? 'returned from' : 'given to'} vendor.`
           })
       }
   };

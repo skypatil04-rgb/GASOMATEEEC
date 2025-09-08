@@ -14,6 +14,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+
+type Ownership = 'gasomateec' | 'self';
 
 export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const { vendors, handleTransaction, isLoading } = useData();
@@ -22,6 +26,8 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
   const [co2OutCount, setCo2OutCount] = useState(0);
   const [co2InCount, setCo2InCount] = useState(0);
   const [date, setDate] = useState<Date>(new Date());
+  const [oxygenOwnership, setOxygenOwnership] = useState<Ownership>('gasomateec');
+  const [co2Ownership, setCo2Ownership] = useState<Ownership>('gasomateec');
   
   const vendor = vendors.find(v => v.id === vendorId);
 
@@ -44,7 +50,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
              <Card>
               <CardHeader>
-                <CardTitle className="text-lg text-destructive">Net Cylinders With Vendor</CardTitle>
+                <CardTitle className="text-lg text-destructive">Net Gasomateec Cylinders With Vendor</CardTitle>
                 <CardDescription>Total currently held by vendor</CardDescription>
               </CardHeader>
               <CardContent>
@@ -81,9 +87,19 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium text-center mb-2">Oxygen Cylinder</h4>
+            <div className="space-y-8">
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-center mb-4">Oxygen Cylinder</h4>
+                 <RadioGroup defaultValue="gasomateec" className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setOxygenOwnership(value)}>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="gasomateec" id="o2-gasomateec" />
+                        <Label htmlFor="o2-gasomateec">Gasomateec</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="self" id="o2-self" />
+                        <Label htmlFor="o2-self">Vendor's Self</Label>
+                    </div>
+                </RadioGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                      <Input type="number" value={oxygenInCount} onChange={e => setOxygenInCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
@@ -91,7 +107,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       variant="default"
                       className="transition-transform active:scale-95"
                       onClick={() => {
-                        handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount, date);
+                        handleTransaction(vendor.id, 'in', 'oxygen', oxygenInCount, date, oxygenOwnership);
                         setOxygenInCount(0);
                       }}
                     >
@@ -104,7 +120,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       variant="destructive"
                       className="transition-transform active:scale-95"
                       onClick={() => {
-                        handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date);
+                        handleTransaction(vendor.id, 'out', 'oxygen', oxygenOutCount, date, oxygenOwnership);
                         setOxygenOutCount(0);
                       }}
                     >
@@ -113,8 +129,18 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                   </div>
                 </div>
               </div>
-              <div>
-                <h4 className="font-medium text-center mb-2">CO2 Cylinder</h4>
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-center mb-4">CO2 Cylinder</h4>
+                 <RadioGroup defaultValue="gasomateec" className="flex justify-center gap-8 mb-4" onValueChange={(value: Ownership) => setCo2Ownership(value)}>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="gasomateec" id="co2-gasomateec" />
+                        <Label htmlFor="co2-gasomateec">Gasomateec</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="self" id="co2-self" />
+                        <Label htmlFor="co2-self">Vendor's Self</Label>
+                    </div>
+                </RadioGroup>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <div className="flex items-center gap-2">
                       <Input type="number" value={co2InCount} onChange={e => setCo2InCount(Math.max(0, parseInt(e.target.value) || 0))} className="flex-1" />
@@ -122,7 +148,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                           variant="default"
                           className="transition-transform active:scale-95"
                           onClick={() => {
-                            handleTransaction(vendor.id, 'in', 'co2', co2InCount, date);
+                            handleTransaction(vendor.id, 'in', 'co2', co2InCount, date, co2Ownership);
                             setCo2InCount(0);
                           }}
                       >
@@ -135,7 +161,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       variant="destructive"
                       className="transition-transform active:scale-95"
                       onClick={() => {
-                        handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date);
+                        handleTransaction(vendor.id, 'out', 'co2', co2OutCount, date, co2Ownership);
                         setCo2OutCount(0);
                       }}
                     >
@@ -161,6 +187,7 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Cylinder</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead className="text-right">Count</TableHead>
               </TableRow>
             </TableHeader>
@@ -175,12 +202,13 @@ export default function VendorDetail({ vendorId }: { vendorId: string }) {
                       </span>
                     </TableCell>
                     <TableCell>{tx.cylinderType.toUpperCase()}</TableCell>
+                     <TableCell className="capitalize">{tx.ownership}</TableCell>
                     <TableCell className="text-right">{tx.count}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">No transactions yet.</TableCell>
+                  <TableCell colSpan={5} className="text-center">No transactions yet.</TableCell>
                 </TableRow>
               )}
             </TableBody>
